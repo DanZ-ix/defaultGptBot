@@ -33,7 +33,17 @@ class Mail():
 
   async def background_edit(self):
     while True:
-      info = f'Время выполнения: {await other_commands.getTimeFormat(int(time.time()) - self.start_mail)}\nВсего пользователей: {self.count_users}\nВсего отправлено: {self.all_users}\nУспешно отправлено: {self.send}\nЗаблокировали бота: {self.block_bot}\nУдалённых пользователей: {self.delete_user}\nАккаунт не действителен: {self.acc_not_active}\nУходил в сон: {self.sleep}\nКоличество таймаутов: {self.timeout_count}\nКоличество ошибок: {self.error}\nПрочие ошибки: {self.other_error and " | ".join(self.other_error) or "нет"}'
+      info = f'Время выполнения: {await other_commands.getTimeFormat(int(time.time()) - self.start_mail)}\n' \
+             f'Всего пользователей: {self.count_users}\n' \
+             f'Всего отправлено: {self.all_users}\n' \
+             f'Успешно отправлено: {self.send}\n' \
+             f'Заблокировали бота: {self.block_bot}\n' \
+             f'Удалённых пользователей: {self.delete_user}\n' \
+             f'Аккаунт не действителен: {self.acc_not_active}\n' \
+             f'Уходил в сон: {self.sleep}\n' \
+             f'Количество таймаутов: {self.timeout_count}\n' \
+             f'Количество ошибок: {self.error}\n' \
+             f'Прочие ошибки: {self.other_error and " | ".join(self.other_error) or "нет"}'
       # info = f'Время выполнения: {await other_commands.getTimeFormat(int(time.time()) - self.start_mail)}\n\n🔰Рассылка🔰\n👥 Пользователи\n├ Всего: {self.count_users}\n├ Живые: {self.send}\n└ Мертвые: {self.die}'
 
       self.timer += 1
@@ -371,3 +381,41 @@ async def new_button(message: types.Message, state: FSMContext):
   await editor_mailing(chat, data, message_id=data.get('message_id'))
   await other_commands.set_trash(message, chat=chat)
   await mailing_state.start_mail.set()
+
+
+@dp.message_handler(isPrivate(), commands=['add_link'], state="*")
+async def add_invite_link(message: types.Message, state: FSMContext):
+  chat, fullname, username, user_id = message.chat.id, message.from_user.full_name, message.from_user.username and f"@{message.from_user.username}" or "", str(
+    message.from_user.id)
+  id = await connect_bd.mongo_conn.db.links.count_documents({})
+
+  link = {'link_id': id, 'admin_id': user_id, 'invited_number': 0, 'deleted': False}
+  await connect_bd.mongo_conn.db.links.insert_one(link)
+  await bot.send_message(chat, 'Ссылка создана: ' + f'<code>https://t.me/{bot["username"]}?start={id}</code>', parse_mode='html')
+
+
+
+@dp.message_handler(isPrivate(), commands=['show_links'], state="*")
+async def show_links(message: types.Message, state: FSMContext):
+  chat, fullname, username, user_id = message.chat.id, message.from_user.full_name, message.from_user.username and f"@{message.from_user.username}" or "", str(
+    message.from_user.id)
+
+  user_links = []
+  async for link in connect_bd.mongo_conn.db.links.find({'deleted': False}):
+    if link.get('admin_id') == user_id:
+      user_links.append(link)
+
+  ret_message = 'Ваши ссылки: \n'
+
+  if (len(user_links) == 0):
+    await bot.send_message(chat, 'У вас пока нет ссылок, нужно создзать их с помощью команды /add_link', parse_mode='html')
+    return
+
+
+  for link in user_links:
+    ret_message += f'<code>https://t.me/{bot["username"]}?start={link.get("link_id")}</code>\nКоличество откликов по ней: {link.get("invited_number")}\n\n'
+
+  await bot.send_message(chat, ret_message, parse_mode='html')
+
+
+

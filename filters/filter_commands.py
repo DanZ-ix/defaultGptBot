@@ -62,11 +62,13 @@ class isUser(BoundFilter):
     fullname = message.from_user.full_name
     username = message.from_user.username or ''
 
-    if connect_bd.mongo_conn.users.get(user_id) == None:
-      obj = {'user_id': user_id, 'fullname': fullname, 'username': username, 'history': {}, 'dialogs': [], 'date': datetime.now(), 'message_filters': [], 'attempts_free': 1, 'attempts_pay': 0, 'attempts_channel': []}
+    if connect_bd.mongo_conn.users.get(user_id) is None:
+      obj = {'user_id': user_id, 'fullname': fullname, 'username': username, 'history': {}, 'dialogs': [], 'date': datetime.now(), 'message_filters': [], 'attempts_free': 1, 'attempts_pay': 0, 'attempts_channel': [], 'new_user': True}
       connect_bd.mongo_conn.users[user_id] = {'fullname': fullname, 'username': username}
+
       await connect_bd.mongo_conn.db.users.insert_one(obj)
     else:
+      await connect_bd.mongo_conn.db.users.update_one({'user_id': int(user_id)}, {'$set': {'new_user': False}})
       if connect_bd.mongo_conn.users[user_id]['username'] != username or connect_bd.mongo_conn.users[user_id]['fullname'] != fullname:
         connect_bd.mongo_conn.users[user_id]['username'] = username
         connect_bd.mongo_conn.users[user_id]['fullname'] = fullname
