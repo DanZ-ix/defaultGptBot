@@ -7,3 +7,4 @@ websocket-client
 aiofiles
 yoomoney
 pandas_ods_reader
+requests
