@@ -4,7 +4,7 @@ import os
 import aiofiles
 import aiohttp
 
-from loader import dp, types, bot, connect_bd, keyboard, banlist_state, FSMContext, gpt_api, dc_api, other_commands, bot_token
+from loader import dp, types, bot, connect_bd, keyboard, banlist_state, FSMContext, gpt_api, other_commands, bot_token
 from filters.filter_commands import isPrivate
 
 async def add_ban_list(ban_lists, user_id, chat, message, user_data):
