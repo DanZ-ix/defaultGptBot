@@ -57,11 +57,9 @@ class aio_keyboard:
   async def call_gpt(self):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1, is_persistent=True)
     keyboard.add(*[
-      {'text': 'Начать чат', 'callback_data': 'Начать чат'},
-      {'text': 'Бесплатные курсы', 'callback_data': f'Бесплатные курсы'}
+      {'text': 'Начать чат', 'callback_data': 'Начать чат'}
+      # ,{'text': 'Бесплатные курсы', 'callback_data': f'Бесплатные курсы'}
     ])
-    keyboard.add('Начать чат')
-    keyboard.add('Бесплатные курсы')
     return keyboard
 
   async def get_accounts_imagine(self, acc_id=''):

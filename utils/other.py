@@ -23,7 +23,7 @@ class OtherCommands():
   async def set_commands(self):
     await self.bot.set_my_commands([
       self.types.BotCommand("profile", "👤 Профиль"),
-      self.types.BotCommand("check_courses", "Бесплатные курсы"),
+      #self.types.BotCommand("check_courses", "Бесплатные курсы"),
       self.types.BotCommand("chat", "💬 Общение с chat-GPT нейросетью")
     ], self.types.bot_command_scope.BotCommandScopeAllGroupChats())
     await self.bot.set_my_commands([
@@ -37,7 +37,7 @@ class OtherCommands():
       try:
         await self.dp.bot.set_my_commands([
           self.types.BotCommand("profile", "👤 Профиль"),
-          self.types.BotCommand("check_courses", "Бесплатные курсы"),
+          #self.types.BotCommand("check_courses", "Бесплатные курсы"),
           self.types.BotCommand("chat", "💬 Общение с chat-GPT нейросетью"),
           self.types.BotCommand("queues", "🕓 Список очереди"),
           self.types.BotCommand("mailing", "🔗 Рассылка"),

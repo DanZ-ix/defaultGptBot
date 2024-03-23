@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 
-from loader import dp, types, connect_bd, start_state, gpt_state, imagine_state, FSMContext, keyboard, bot, channel_subscribe, welcome_message, other_func, state_profile, rate_limit, channel_in, channel_in1, logging
+from loader import dp, types, connect_bd, start_state, gpt_state, imagine_state, FSMContext, keyboard, bot, channel_subscribe, welcome_message, other_func, state_profile, rate_limit, channel_in, logging
 from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard, isInviteUser
 
 
@@ -64,7 +64,7 @@ async def start(message: types.Message, state: FSMContext):
 
   #sub = await check_sub(user_id, channels)
   if False: #sub != len(channels):
-    m = await keyboard.subscribe_channel(user_id, channel_in1, ch_in)
+    m = await keyboard.subscribe_channel(user_id, channel_in, ch_in)
     await bot.send_message(chat, f'<b>Привет! Это бот предоставляющий доступ к нейросети ChatGPT.</b>\n\nДля дальнейшего использования бота подпишись на наши канал, чтобы быть в курсе событий\n\n1. {ch_in}', reply_markup=m, disable_web_page_preview=True, parse_mode='html')
 
     user_invite_id = message.get_args()

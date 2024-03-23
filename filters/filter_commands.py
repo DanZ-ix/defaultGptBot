@@ -3,8 +3,7 @@ import re
 from datetime import datetime
 from aiogram.dispatcher.filters import BoundFilter
 
-from loader import types, conf, connect_bd, channel_subscribe, bot, keyboard, imagine_state, state_profile, dp, invite_count_max_to_day, channel_in, channel_in1
-
+from loader import types, conf, connect_bd, channel_subscribe, bot, keyboard, imagine_state, state_profile, dp, invite_count_max_to_day, channel_in
 class isInviteUser(BoundFilter):
   async def check(self, message: types.Message):
     chat, user_id = 'message' in message and message.message.chat.id or message.chat.id, message.from_user.id

@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from loader import dp, types, state_profile, FSMContext, bot, keyboard, other_func, channel_subscribe, connect_bd, youmoney_web, conf, account_number, rate_limit, start_state, channel_in, channel_in1
+from loader import dp, types, state_profile, FSMContext, bot, keyboard, other_func, channel_subscribe, connect_bd, youmoney_web, conf, account_number, rate_limit, start_state, channel_in
 from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard
 
 

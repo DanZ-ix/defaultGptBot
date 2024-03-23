@@ -16,8 +16,8 @@ account_number = conf['youmoney']['account']
 invite_count_max_to_day = 20
 
 channel_in = '<a href="https://t.me/+khaZwmg2C61lNjBi">тест подписки</a>'
-channel_in1 = ''
 
-welcome_message = conf['messages']['start_message']
-auto_join_message = conf['messages']['auto_join_message']
+
+welcome_message = "{{start_message}}"
+auto_join_message = "{{auto_join_message}}"
 
