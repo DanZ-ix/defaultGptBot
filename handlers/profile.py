@@ -79,28 +79,6 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
     pass
 
 
-@dp.callback_query_handler(isUser(), state=state_profile.check_nec_sub)
-@rate_limit(1, 'profile')
-async def callback_data(message: types.CallbackQuery, state: FSMContext):
-  chat, message_id = str(message.message.chat.id), message.message.message_id
-  user_id = str(message.from_user.id)
-  sub = 0
-  try:
-    for chat_id in channel_subscribe:
-      ch = await bot.get_chat_member(chat_id, user_id)
-
-      if ch.status in ['creator', 'administrator', 'member']:
-        sub += 1
-  except:
-    pass
-
-  if sub == len(channel_subscribe):
-    m = await keyboard.select_neural_net()
-    await bot.send_message(chat, 'Выберите, с какой нейросетью будете взаимодействовать', reply_markup=m)
-    await start_state.select_neiro.set()
-  else:
-    await bot.send_message(chat, f'Вы не подписались на канал: {channel_in}', disable_web_page_preview=True, parse_mode='html')
-
 
 @dp.callback_query_handler(isUser(), isSubscribe(), state=state_profile.check_subscribe)
 @rate_limit(1, 'profile')
