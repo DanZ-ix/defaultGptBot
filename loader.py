@@ -8,7 +8,7 @@ from aiogram.contrib.fsm_storage.mongo import MongoStorage
 from mongodb import connect_bd
 from utils import other_commands, other_func, state_profile, start_state, imagine_state, gpt_state, accounts_state, queues_state, banlist_state, mailing_state, channels_state, channels_necessary_state, keyboard, throttling
 from data.config import bot_token, channel_subscribe, attempts_channels, conf, welcome_message, account_number
-from data.config import gpt_host_api, dialog_max_tokens, invite_count_max_to_day, channel_in, channels_auto_join, auto_join_message
+from data.config import gpt_host_api, dialog_max_tokens, invite_count_max_to_day, channels_auto_join, auto_join_message
 
 
 from gpt_api import gpt_api

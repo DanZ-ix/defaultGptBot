@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 
-from loader import dp, types, connect_bd, start_state, gpt_state, imagine_state, FSMContext, keyboard, bot, channel_subscribe, welcome_message, other_func, state_profile, rate_limit, channel_in, logging
+from loader import dp, types, connect_bd, start_state, gpt_state, imagine_state, FSMContext, keyboard, bot, channel_subscribe, welcome_message, other_func, state_profile, rate_limit, logging
 from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard, isInviteUser
 
 
