@@ -49,6 +49,19 @@ async def accounts_manager(message: types.Message):
   await accounts_state.select_type_control.set()
 
 
+
+@dp.callback_query_handler(isPrivate(), state=accounts_state.select_type_control)
+async def callback_data(message: types.CallbackQuery, state: FSMContext):
+  chat, message_id = str(message.message.chat.id), message.message.message_id
+
+  if message.data == 'gpt_add_acc':
+    t, m = await keyboard.get_accounts_gpt()
+    await bot.edit_message_text(t, chat, message_id, reply_markup=m)
+    await accounts_state.control_accounts_gpt.set()
+
+
+
+
 @dp.callback_query_handler(isPrivate(), state=accounts_state.control_accounts_gpt)
 async def callback_data(message: types.CallbackQuery, state: FSMContext):
   chat, message_id = str(message.message.chat.id), message.message.message_id

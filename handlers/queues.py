@@ -1,5 +1,5 @@
 
-from loader import dp, types, queues_state, FSMContext, keyboard, bot
+from loader import dp, types, queues_state, FSMContext, keyboard, bot, connect_bd
 from filters.filter_commands import isPrivate
 
 
@@ -38,3 +38,13 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
     await queues_state.queues_update.set()
 
   return True
+
+
+@dp.message_handler(isPrivate(), commands=['purge_query'], state="*")
+async def purge_query(message: types.Message):
+  chat, fullname, username, user_id = message.chat.id, message.from_user.full_name, message.from_user.username and f"@{message.from_user.username}" or "", str(
+    message.from_user.id)
+  await connect_bd.mongo_conn.db.queues.delete_many({})
+  await bot.send_message(chat, 'Очереди были очищенны')
+
+
