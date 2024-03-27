@@ -1,6 +1,6 @@
 from aiohttp import web
 from aiohttp.web_request import BaseRequest
-from loader import connect_bd
+from loader import mongo_conn, account_number, bot
 from yoomoney import Quickpay
 
 class NotifyYoumoney():
@@ -31,8 +31,8 @@ class NotifyYoumoney():
         user_id, attempt = payload['label'].split(':')
         if int(float(payload.get('withdraw_amount'))) in [199, 359, 499, 899]:
           if payload.get('currency') == '643' and payload.get('unaccepted') == 'false':
-            await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$inc': {'attempts_pay': int(attempt)}})
-            await connect_bd.mongo_conn.db.payments.insert_one(dict(payload))
+            await mongo_conn.db.users.update_one({'user_id': user_id}, {'$inc': {'attempts_pay': int(attempt)}})
+            await mongo_conn.db.payments.insert_one(dict(payload))
 
       return web.Response(text='YES', status=200)
 
@@ -44,3 +44,6 @@ class NotifyYoumoney():
     app.router._frozen = True
     site = web.TCPSite(runner, host='127.0.0.1', port=1234)
     await site.start()
+
+
+youmoney_web = NotifyYoumoney(account_number, bot)

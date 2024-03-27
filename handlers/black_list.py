@@ -4,12 +4,17 @@ import os
 import aiofiles
 import aiohttp
 
-from loader import dp, types, bot, connect_bd, keyboard, banlist_state, FSMContext, gpt_api, other_commands, bot_token
+from loader import dp, types, bot, mongo_conn, FSMContext, bot_token
 from filters.filter_commands import isPrivate
+from utils.keyboards import keyboard
+from utils.state_progress import banlist_state
+from utils.other import other_commands
+from gpt_api import gpt_api
+
 
 async def add_ban_list(ban_lists, user_id, chat, message, user_data):
   data = []
-  async for word in connect_bd.mongo_conn.db.banlist.find({'word': {'$in': ban_lists}}):
+  async for word in mongo_conn.db.banlist.find({'word': {'$in': ban_lists}}):
     ban_lists.remove(word['word'])
 
   for i in range(0, len(ban_lists)):
@@ -19,9 +24,9 @@ async def add_ban_list(ban_lists, user_id, chat, message, user_data):
 
   if data:
     if len(data) > 1:
-      await connect_bd.mongo_conn.db.banlist.insert_many(data)
+      await mongo_conn.db.banlist.insert_many(data)
     else:
-      await connect_bd.mongo_conn.db.banlist.insert_one(data[0])
+      await mongo_conn.db.banlist.insert_one(data[0])
 
   await other_commands.set_trash(message, chat=chat)
   t, m = await keyboard.get_accounts_gpt()

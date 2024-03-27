@@ -3,57 +3,11 @@ import re
 from datetime import datetime
 from aiogram.dispatcher.filters import BoundFilter
 
-from loader import types, conf, connect_bd, channel_subscribe, bot, keyboard, imagine_state, state_profile, dp, invite_count_max_to_day
-class isInviteUser(BoundFilter):
-  async def check(self, message: types.Message):
-    chat, user_id = 'message' in message and message.message.chat.id or message.chat.id, message.from_user.id
-    user_id_reward = message.get_args()
+from loader import types, conf, mongo_conn, bot, dp
+from utils.keyboards import keyboard
+from utils.state_progress import state_profile
 
-    if user_id_reward:
-      is_user = await connect_bd.mongo_conn.db.users.find_one({'user_id': str(user_id)})
-      if not re.findall(r'[a-z]+', user_id_reward, re.IGNORECASE):
-        if not is_user:
-          user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id_reward})
-          if user:
-            is_inv = user.get('invite_count_now')
-            if is_inv == None:
-              await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id_reward},
-                {'$set': {'invite_count_now': 0}})
-              invite_count = 0
-            else:
-              invite_count = is_inv
 
-            sub = 0
-            for chat_id in channel_subscribe:
-              try:
-                ch = await bot.get_chat_member(chat_id, user_id)
-
-                if ch.status in ['creator', 'administrator', 'member']:
-                  sub += 1
-              except:
-                pass
-
-            if invite_count < invite_count_max_to_day or str(user_id_reward) in conf['admin']['id']:
-              if sub == len(channel_subscribe):
-                await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id_reward}, {'$inc': {'attempts_pay': 1, 'invite_count_now': 1}})
-                try:
-                  await bot.send_message(user_id_reward, 'Вам была начислена попытка для Midjourney нейросети')
-                except:
-                  pass
-              else:
-                await dp.storage.update_data(chat=chat, user=user_id, data={'new_invite_user': True, 'user_invite_id': user_id_reward})
-            else:
-              try:
-                await bot.send_message(user_id_reward, 'Вы сегодня больше не сможете получить попытки для Midjourney, дневной лимит!')
-              except:
-                pass
-        else:
-          await dp.storage.update_data(chat=chat, user=user_id, data={'new_invite_user': False})
-      else:
-        if not is_user:
-          await dp.storage.update_data(chat=chat, user=user_id, data={'bot_link_user': True})
-
-    return True
 
 class isUser(BoundFilter):
   async def check(self, message: types.Message):
@@ -61,17 +15,17 @@ class isUser(BoundFilter):
     fullname = message.from_user.full_name
     username = message.from_user.username or ''
 
-    if connect_bd.mongo_conn.users.get(user_id) is None:
+    if mongo_conn.users.get(user_id) is None:
       obj = {'user_id': user_id, 'fullname': fullname, 'username': username, 'history': {}, 'dialogs': [], 'date': datetime.now(), 'message_filters': [], 'attempts_free': 1, 'attempts_pay': 0, 'attempts_channel': [], 'new_user': True}
-      connect_bd.mongo_conn.users[user_id] = {'fullname': fullname, 'username': username}
+      mongo_conn.users[user_id] = {'fullname': fullname, 'username': username}
 
-      await connect_bd.mongo_conn.db.users.insert_one(obj)
+      await mongo_conn.db.users.insert_one(obj)
     else:
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': int(user_id)}, {'$set': {'new_user': False}})
-      if connect_bd.mongo_conn.users[user_id]['username'] != username or connect_bd.mongo_conn.users[user_id]['fullname'] != fullname:
-        connect_bd.mongo_conn.users[user_id]['username'] = username
-        connect_bd.mongo_conn.users[user_id]['fullname'] = fullname
-        await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'username': username, 'fullname': fullname}})
+      await mongo_conn.db.users.update_one({'user_id': int(user_id)}, {'$set': {'new_user': False}})
+      if mongo_conn.users[user_id]['username'] != username or mongo_conn.users[user_id]['fullname'] != fullname:
+        mongo_conn.users[user_id]['username'] = username
+        mongo_conn.users[user_id]['fullname'] = fullname
+        await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'username': username, 'fullname': fullname}})
 
     return True
 
@@ -103,7 +57,7 @@ class isSubscribe(BoundFilter):
     if user_id == 154134326 or user_id == 982381226:
       return True
     try:
-      ness_channels = connect_bd.mongo_conn.db.channels_necessary_subscribe.find()
+      ness_channels = mongo_conn.db.channels_necessary_subscribe.find()
       channels_needed = []
       async for ch in ness_channels:
         if await check_sub(user_id, ch.get("id")):
@@ -125,7 +79,7 @@ class isSubscribe(BoundFilter):
 class isNotQueue(BoundFilter):
   async def check(self, message: types.Message):
     user_id = str(message.from_user.id)
-    is_exist_with_queue = await connect_bd.mongo_conn.db.queues.find_one({'user_id': user_id})
+    is_exist_with_queue = await mongo_conn.db.queues.find_one({'user_id': user_id})
 
     try:
       t = message.text
@@ -152,9 +106,9 @@ class isAttempt(BoundFilter):
   async def check(self, message: types.Message):
     chat, user_id = 'message' in message and message.message.chat.id or message.chat.id, str(message.from_user.id)
 
-    user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id})
+    user = await mongo_conn.db.users.find_one({'user_id': user_id})
     if user.get('attempts_free') == None:
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'attempts_free': 1}})
+      await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'attempts_free': 1}})
       return True
     else:
       if user['attempts_free'] > 0:

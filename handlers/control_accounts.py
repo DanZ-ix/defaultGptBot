@@ -1,15 +1,16 @@
-
-import time
 from datetime import datetime
 import aiohttp
 
-from loader import dp, types, bot, connect_bd, keyboard, accounts_state, FSMContext, other_commands, bot_token, account_number
+from loader import dp, types, bot, mongo_conn, FSMContext, bot_token
 from filters.filter_commands import isPrivate
+from utils.keyboards import keyboard
+from utils.state_progress import accounts_state
+from utils.other import other_commands
 
 
 async def add_gpt_acc(tokens, user_id, chat, message, user_data):
   data = []
-  async for acc in connect_bd.mongo_conn.db.accounts.find({'token': {'$in': tokens}}):
+  async for acc in mongo_conn.db.accounts.find({'token': {'$in': tokens}}):
     tokens.remove(acc['token'])
 
   new_acc, no_valid_token = [], 0
@@ -30,9 +31,9 @@ async def add_gpt_acc(tokens, user_id, chat, message, user_data):
 
   if data:
     if len(data) > 1:
-      await connect_bd.mongo_conn.db.accounts.insert_many(data)
+      await mongo_conn.db.accounts.insert_many(data)
     else:
-      await connect_bd.mongo_conn.db.accounts.insert_one(data[0])
+      await mongo_conn.db.accounts.insert_one(data[0])
 
   await other_commands.set_trash(message, chat=chat)
   t, m = await keyboard.get_accounts_gpt()

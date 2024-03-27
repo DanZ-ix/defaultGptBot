@@ -1,8 +1,13 @@
+import asyncio
+
 
 async def start(dp):
   import asyncio
   import filters
-  from loader import other_commands, types, bot, conf, connect_bd, logging, gpt_api, keyboard, youmoney_web
+  from loader import types, bot, mongo_conn, logging, admin_list, gpt_host_api, dialog_max_tokens, account_number
+  from gpt_api import gpt_api
+  from utils.other import other_commands
+  from youmoney_hook.webhook import youmoney_web
 
   asyncio.create_task(youmoney_web.web_hooks())
 
@@ -15,27 +20,25 @@ async def start(dp):
   other_commands.logging = logging
   other_commands.types = types
 
+  gpt_api = gpt_api.gptApi(gpt_host_api, dialog_max_tokens)
+
+
+
   filters.setup(dp)
-  await connect_bd.mongo_conn.connect_server()
-
-  rep = {}
-  async for img in connect_bd.mongo_conn.db.images_capcha.find():
-    if rep.get(img['image_url']) == None:
-      rep[img['image_url']] = img
-    else:
-      await connect_bd.mongo_conn.db.images_capcha.delete_one({'image_url': img['image_url']})
-
+  await mongo_conn.connect_server()
   await gpt_api.check_accounts()
 
   asyncio.create_task(gpt_api.check_gpt_queues(bot))
 
   await other_commands.set_commands()
-  if conf['admin']['id']:
-    await other_commands.set_admin_commands(conf['admin']['id'])
+  if admin_list:
+    await other_commands.set_admin_commands(admin_list)
 
 
 if __name__ == '__main__':
   from aiogram import executor
   from handlers import dp
 
+  loop = asyncio.new_event_loop()
+  asyncio.set_event_loop(loop)
   executor.start_polling(dp, on_startup=start, skip_updates=True)

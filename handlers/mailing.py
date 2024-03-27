@@ -2,8 +2,12 @@ import asyncio
 import time
 import re
 
-from loader import dp, types, mailing_state, FSMContext, bot, keyboard, other_commands, connect_bd, exceptions, conf, logging
+from loader import dp, types, FSMContext, bot, mongo_conn, exceptions, conf, logging
 from filters.filter_commands import isPrivate
+from utils.state_progress import mailing_state
+from utils.keyboards import keyboard
+from utils.other import other_commands
+
 
 class Mail():
   def __init__(self, text, video, photo, reply_markup, save_user, state, mail_new_channel=False, admin_mail=False):
@@ -88,7 +92,7 @@ class Mail():
       obj = {'new_channel_notify': True}
 
     if not self.admin_mail:
-      async for user in connect_bd.mongo_conn.db.users.find(obj):
+      async for user in mongo_conn.db.users.find(obj):
         self.users.append(user)
     else:
       for adm in conf['admin']['id']:
@@ -387,10 +391,10 @@ async def new_button(message: types.Message, state: FSMContext):
 async def add_invite_link(message: types.Message, state: FSMContext):
   chat, fullname, username, user_id = message.chat.id, message.from_user.full_name, message.from_user.username and f"@{message.from_user.username}" or "", str(
     message.from_user.id)
-  id = await connect_bd.mongo_conn.db.links.count_documents({})
+  id = await mongo_conn.db.links.count_documents({})
 
   link = {'link_id': id, 'admin_id': user_id, 'invited_number': 0, 'deleted': False}
-  await connect_bd.mongo_conn.db.links.insert_one(link)
+  await mongo_conn.db.links.insert_one(link)
   await bot.send_message(chat, 'Ссылка создана: ' + f'<code>https://t.me/{bot["username"]}?start={id}</code>', parse_mode='html')
 
 
@@ -401,7 +405,7 @@ async def show_links(message: types.Message, state: FSMContext):
     message.from_user.id)
 
   user_links = []
-  async for link in connect_bd.mongo_conn.db.links.find({'deleted': False}):
+  async for link in mongo_conn.db.links.find({'deleted': False}):
     if link.get('admin_id') == user_id:
       user_links.append(link)
 

@@ -1,7 +1,8 @@
 import re
 import time
 from datetime import datetime, timedelta
-from loader import types, connect_bd
+from loader import types, mongo_conn
+
 # TODO Адский рефакторинг
 class aio_keyboard:
 
@@ -43,7 +44,7 @@ class aio_keyboard:
   async def get_accounts_gpt(self):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
 
-    count_gpt_tokens = await connect_bd.mongo_conn.db.accounts.count_documents({'type': 'gpt'})
+    count_gpt_tokens = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
     t, arr = f'Добавление токенов для GPT нейросети, сейчас {count_gpt_tokens} токен(-а, -ов)', []
 
     keyboard.add(*[
@@ -66,7 +67,7 @@ class aio_keyboard:
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     t, mode_select, arr, max_generate = 'Управление аккаунтами:', '', [], 0
 
-    async for acc in connect_bd.mongo_conn.db.accounts.find({'type': 'midjourney'}):
+    async for acc in mongo_conn.db.accounts.find({'type': 'midjourney'}):
       mode = acc.get('mode')
       if acc_id == acc['id']:
         now = acc['date']
@@ -100,11 +101,11 @@ class aio_keyboard:
 
   async def settings_for_dc(self, account_number):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
-    sett = await connect_bd.mongo_conn.db.settings.find_one({'admin': True})
+    sett = await mongo_conn.db.settings.find_one({'admin': True})
 
     if not sett:
       sett = {'admin': True, 'mode': {'fast': {'min_queues': 30, 'max_queues': 100, 'time_wait': 5}, 'relax': {'min_queues': 1, 'max_queues': 30, 'time_wait': 15}}, 'account': account_number}
-      await connect_bd.mongo_conn.db.settings.insert_one(sett)
+      await mongo_conn.db.settings.insert_one(sett)
 
 
     t = f'Макс. время ожидания ответа для <b>Fast</b>: {sett["mode"]["fast"]["time_wait"]} мин.\nМакс. время ожидания ответа для <b>Relax</b>: {sett["mode"]["relax"]["time_wait"]} мин.\n\n<strong>Что хотите изменить?</strong>'
@@ -134,19 +135,19 @@ class aio_keyboard:
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     t, i = 'Сейчас очереди нет', 0
 
-    users_all = await connect_bd.mongo_conn.db.users.count_documents({})
+    users_all = await mongo_conn.db.users.count_documents({})
 
     pre_day = datetime.now() - timedelta(days=1)
-    new_users_day = await connect_bd.mongo_conn.db.users.count_documents({'date': {'$gt': pre_day}})
+    new_users_day = await mongo_conn.db.users.count_documents({'date': {'$gt': pre_day}})
 
     pre_week = datetime.now() - timedelta(days=7)
-    new_users_week = await connect_bd.mongo_conn.db.users.count_documents({'date': {'$gt': pre_week}})
+    new_users_week = await mongo_conn.db.users.count_documents({'date': {'$gt': pre_week}})
 
     pre_month = datetime.now() - timedelta(days=30)
-    new_users_month = await connect_bd.mongo_conn.db.users.count_documents({'date': {'$gt': pre_month}})
+    new_users_month = await mongo_conn.db.users.count_documents({'date': {'$gt': pre_month}})
 
     queues, count_active_queues, count_active_relax_queues, count_active_fast_queues = [], 0, 0, 0
-    async for queue in connect_bd.mongo_conn.db.queues.find({'type': type}):
+    async for queue in mongo_conn.db.queues.find({'type': type}):
       queues.append(queue)
       if queue.get('request') == True and type == 'midjorney':
         count_active_queues += 1
@@ -162,7 +163,7 @@ class aio_keyboard:
 
       t = f'{update and f"[<code>{datetime.fromtimestamp(int(time.time()))}</code>]" or ""}\n\nОчередь запросов:\n\n'
       for queue in queues[-10:]:
-        user = connect_bd.mongo_conn.users[queue["user_id"]]
+        user = mongo_conn.users[queue["user_id"]]
         tag = f'<a href="tg://user?id={queue["user_id"]}">{user["fullname"]}</a> {user["username"] and "@"+user["username"] or ""}'
         i += 1
 
@@ -234,7 +235,7 @@ class aio_keyboard:
     keyboard = types.InlineKeyboardMarkup(row_width=2)
 
     try:
-      count_ban_list = await connect_bd.mongo_conn.db.banlist.count_documents()
+      count_ban_list = await mongo_conn.db.banlist.count_documents()
     except:
       count_ban_list = 0
 
@@ -316,7 +317,7 @@ class aio_keyboard:
   async def variants_subscribe_to_channels(self, user_get_channel=False, select_channel_id='', filters_channels=None):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     t, count = user_get_channel == False and 'Список каналов для получения попыток в Midjourney' or 'Чтобы получить n количество попыток для midjourney - подпишись на каналы и жми «Проверить подписку»', 0
-    async for channel in connect_bd.mongo_conn.db.channels_subscribe.find():
+    async for channel in mongo_conn.db.channels_subscribe.find():
       if filters_channels:
         if channel['id'] in filters_channels:
           continue
@@ -356,7 +357,7 @@ class aio_keyboard:
     id, t, count, arr = '', 'Список каналов для обязательной подписки', 0, []
 
     repeat_ch = {}
-    async for channel in connect_bd.mongo_conn.db.channels_necessary_subscribe.find():
+    async for channel in mongo_conn.db.channels_necessary_subscribe.find():
       if repeat_ch.get(channel['id']) == None:
         repeat_ch[channel['id']] = 0
       repeat_ch[channel['id']] += 1
@@ -407,3 +408,6 @@ class aio_keyboard:
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add({'text': 'Уведомить о новых попытках', 'callback_data': 'notify_attempt_variants'})
     return keyboard
+
+
+keyboard = aio_keyboard()

@@ -1,8 +1,8 @@
-import asyncio
-import datetime
-
-from loader import dp, types, connect_bd, start_state, gpt_state, imagine_state, FSMContext, keyboard, bot, channel_subscribe, welcome_message, other_func, state_profile, rate_limit, logging
-from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard, isInviteUser
+from loader import dp, types, mongo_conn, FSMContext, bot, welcome_message, rate_limit, logging
+from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard
+from utils.state_progress import start_state, gpt_state, state_profile
+from utils.keyboards import keyboard
+from utils.functions import other_func
 
 
 @dp.message_handler(isUser(), isSubscribe(), clearDownKeyboard(), commands=['start'], state="*")
@@ -61,7 +61,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
       async with state.proxy() as d:
         if d.get('dialog'):
           del d['dialog']
-          await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
+          await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
 
 
     if message.data == 'get_profile':

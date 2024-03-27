@@ -2,8 +2,10 @@ import asyncio
 from datetime import datetime
 import time
 
-from loader import dp, types, connect_bd, gpt_state, gpt_api, FSMContext, keyboard, bot, start_state, rate_limit, logging, conf, account_number
+from loader import dp, types, mongo_conn, FSMContext, bot, rate_limit, logging
 from filters.filter_commands import isUser, isNotQueue, isSubscribe
+from utils.keyboards import keyboard
+from utils.state_progress import gpt_state, start_state
 
 
 @dp.message_handler(isUser(), isSubscribe(), commands=['chat'], state="*")
@@ -25,7 +27,7 @@ async def get_gpt_chat(message: types.Message, state: FSMContext):
       del d['dialog']
 
       d['start_dialog'] = True
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
+      await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
 
 
 @dp.message_handler(isUser(), isSubscribe(), text="Начать чат", state="*")
@@ -48,7 +50,7 @@ async def get_gpt_chat_text_call(message: types.Message, state: FSMContext):
       del d['dialog']
 
       d['start_dialog'] = True
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
+      await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'dialogs': []}})
 
 
 @dp.message_handler(isUser(), text='Назад', state="*")
@@ -76,8 +78,8 @@ async def get_query(message: types.Message, state: FSMContext):
   try:
     query = message.text.strip()
 
-    user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id})
-    count_queues = await connect_bd.mongo_conn.db.queues.count_documents({'type': 'gpt', 'status': 'wait'})
+    user = await mongo_conn.db.users.find_one({'user_id': user_id})
+    count_queues = await mongo_conn.db.queues.count_documents({'type': 'gpt', 'status': 'wait'})
     m = await keyboard.call_gpt()
     if count_queues > 0:
       msg = await bot.send_message(chat, f'Ваш запрос добавлен в очередь. Номер в очереди: {count_queues}.', reply_markup=m)
@@ -93,7 +95,7 @@ async def get_query(message: types.Message, state: FSMContext):
 
     data = {'user_id': user_id, 'chat_id': chat, 'query': query, 'date': datetime.now(), 'start_time': int(time.time()),
         'dialogs': dialogs, 'type': 'gpt', 'message_id': msg.message_id, 'status': 'wait', 'repeat': 0}
-    await connect_bd.mongo_conn.db.queues.insert_one(data)
+    await mongo_conn.db.queues.insert_one(data)
 
   except Exception as e:
     logging.error("Exception occurred", exc_info=True)
@@ -105,16 +107,16 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
   user_id = str(message.from_user.id)
 
   if message.data == 'set_dialog':
-    user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id})
+    user = await mongo_conn.db.users.find_one({'user_id': user_id})
     if user.get('set_dialog') == None:
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': True, 'dialogs': []}})
+      await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': True, 'dialogs': []}})
       await bot.send_message(chat, 'Диалог начат. Теперь бот будет запоминать предыдущие сообщения')
 
     else:
       if user['set_dialog'] == False:
-        await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': True, 'dialogs': []}})
+        await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': True, 'dialogs': []}})
         await bot.send_message(chat, 'Диалог начат. Теперь бот будет запоминать предыдущие сообщения')
       else:
-        await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': False, 'dialogs': []}})
+        await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'set_dialog': False, 'dialogs': []}})
         m = await keyboard.set_dialog(False)
         await bot.send_message(chat, 'Диалог завершён.', reply_markup=m)

@@ -1,9 +1,13 @@
 import asyncio
 import logging
 
-from loader import dp, types, bot, connect_bd, keyboard, FSMContext, channels_state, other_commands
+from loader import dp, types, bot, mongo_conn, FSMContext
 from filters.filter_commands import isPrivate
 from handlers.mailing import Mail
+from utils.keyboards import keyboard
+from utils.other import other_commands
+from utils.state_progress import channels_state
+
 
 @dp.message_handler(isPrivate(), commands=['channels_subscribe'], state="*")
 async def subscribe_manager(message: types.Message):
@@ -12,6 +16,7 @@ async def subscribe_manager(message: types.Message):
   t, m = await keyboard.variants_subscribe_to_channels()
   await bot.send_message(chat, t, reply_markup=m, parse_mode='html', disable_web_page_preview=True)
   await channels_state.control_channels.set()
+
 
 @dp.callback_query_handler(isPrivate(), state=channels_state.control_channels)
 async def callback_data(message: types.CallbackQuery, state: FSMContext):
@@ -41,12 +46,11 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
     if d[0] == 'get_ch':
       t, m = await keyboard.variants_subscribe_to_channels(select_channel_id=d[1])
     else:
-      await connect_bd.mongo_conn.db.channels_subscribe.delete_one({'id': d[1]})
+      await mongo_conn.db.channels_subscribe.delete_one({'id': d[1]})
       t, m = await keyboard.variants_subscribe_to_channels()
 
     await bot.edit_message_text(t, chat, message_id, reply_markup=m, parse_mode='html', disable_web_page_preview=True)
     await channels_state.control_channels.set()
-
 
 
 @dp.message_handler(isPrivate(), state=channels_state.add_channel, content_types=types.ContentType.ANY)
@@ -64,11 +68,11 @@ async def add_channel(message: types.Message, state: FSMContext):
     except:
       channel_info = None
 
-    is_channel = await connect_bd.mongo_conn.db.channels_subscribe.find_one({'id': channel_id})
+    is_channel = await mongo_conn.db.channels_subscribe.find_one({'id': channel_id})
 
     if not is_channel:
       if channel_info:
-        await connect_bd.mongo_conn.db.channels_subscribe.insert_one({'id': channel_id, 'title': channel_title, 'link': 'нет'})
+        await mongo_conn.db.channels_subscribe.insert_one({'id': channel_id, 'title': channel_title, 'link': 'нет'})
         t, m = await keyboard.variants_subscribe_to_channels(select_channel_id=channel_id)
         await bot.edit_message_text(t, chat, user_data['message_id'], reply_markup=m, parse_mode='html', disable_web_page_preview=True)
         await channels_state.control_channels.set()
@@ -84,6 +88,7 @@ async def add_channel(message: types.Message, state: FSMContext):
   except Exception as e:
     await bot.send_message(chat, 'Вы не переслали запись канала или произошла иная ошибка')
     await channels_state.control_channels.set()
+
 
 @dp.message_handler(isPrivate(), state=channels_state.set_mailing, content_types=types.ContentType.TEXT)
 async def start_mail_info_channel(message: types.Message, state: FSMContext):
@@ -104,7 +109,7 @@ async def edit_link(message: types.Message, state: FSMContext):
   link = message.text.strip()
 
   if 't.me' in link:
-    await connect_bd.mongo_conn.db.channels_subscribe.update_one({'id': user_data['channel_id']}, {'$set': {'link': link}})
+    await mongo_conn.db.channels_subscribe.update_one({'id': user_data['channel_id']}, {'$set': {'link': link}})
     t, m = await keyboard.variants_subscribe_to_channels(select_channel_id=user_data['channel_id'])
     await bot.edit_message_text(t, chat, user_data['message_id'], reply_markup=m, parse_mode='html', disable_web_page_preview=True)
     await channels_state.control_channels.set()

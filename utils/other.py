@@ -75,3 +75,6 @@ class OtherCommands():
           pass
 
       del self.trash_data[chat_id]
+
+
+other_commands = OtherCommands()

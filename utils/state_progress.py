@@ -62,3 +62,15 @@ class AddNecessaryChannels(StatesGroup):
   set_link = State()
   set_bot_link = State()
   set_mailing = State()
+  
+  
+state_profile = Profile()
+start_state = Subscribe()
+imagine_state = Imagine()
+gpt_state = GPT()
+accounts_state = AccountsControl()
+queues_state = Queues()
+banlist_state = BanList()
+mailing_state = Mailing()
+channels_state = AddChannels()
+channels_necessary_state = AddNecessaryChannels()

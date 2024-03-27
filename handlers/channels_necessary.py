@@ -3,9 +3,13 @@ import logging
 import re
 import time
 
-from loader import dp, types, bot, connect_bd, keyboard, FSMContext, channels_necessary_state, other_commands
+from loader import dp, types, bot, mongo_conn, FSMContext
 from filters.filter_commands import isPrivate
 from handlers.mailing import Mail
+from utils.keyboards import keyboard
+from utils.other import other_commands
+from utils.state_progress import channels_necessary_state
+
 
 @dp.message_handler(isPrivate(), commands=['channels_necessary'], state="*")
 async def subscribe_manager(message: types.Message):
@@ -46,7 +50,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
 
   if d[0] == 'double_сh':
     chs, channel_title, all_count, link = [], '', 0, ''
-    async for ch in connect_bd.mongo_conn.db.channels_necessary_subscribe.find({'id': d[1]}):
+    async for ch in mongo_conn.db.channels_necessary_subscribe.find({'id': d[1]}):
       all_count += 1
 
       if d[2] == ch['key']:
@@ -54,7 +58,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
         link = ch['link']
 
     t = str(int(time.time()))
-    await connect_bd.mongo_conn.db.channels_necessary_subscribe.insert_one(
+    await mongo_conn.db.channels_necessary_subscribe.insert_one(
       {'key': t, 'id': d[1], 'title': f"{channel_title}", 'link': link})
     t, m = await keyboard.variants_subscribe_necessary_to_channels(key_channel_id=t)
     await bot.edit_message_text(t, chat, message_id, reply_markup=m, parse_mode='html',
@@ -66,8 +70,8 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
     if d[0] == 'get_ch':
       t, m = await keyboard.variants_subscribe_necessary_to_channels(key_channel_id=d[1])
     else:
-      await connect_bd.mongo_conn.db.users.update_many({'necessary_channel.key': d[1]}, {'$unset': {'necessary_channel': True}})
-      await connect_bd.mongo_conn.db.channels_necessary_subscribe.delete_one({'key': d[1]})
+      await mongo_conn.db.users.update_many({'necessary_channel.key': d[1]}, {'$unset': {'necessary_channel': True}})
+      await mongo_conn.db.channels_necessary_subscribe.delete_one({'key': d[1]})
       t, m = await keyboard.variants_subscribe_necessary_to_channels()
 
     await bot.edit_message_text(t, chat, message_id, reply_markup=m, parse_mode='html', disable_web_page_preview=True)
@@ -91,7 +95,7 @@ async def add_channel(message: types.Message, state: FSMContext):
 
   if channel_info:
     t = str(int(time.time()))
-    await connect_bd.mongo_conn.db.channels_necessary_subscribe.insert_one({'key': t, 'id': channel_id, 'title': channel_title, 'link': 'нет'})
+    await mongo_conn.db.channels_necessary_subscribe.insert_one({'key': t, 'id': channel_id, 'title': channel_title, 'link': 'нет'})
     t, m = await keyboard.variants_subscribe_necessary_to_channels(key_channel_id=t)
     await bot.edit_message_text(t, chat, user_data['message_id'], reply_markup=m, parse_mode='html', disable_web_page_preview=True)
     await channels_necessary_state.control_channels.set()
@@ -121,8 +125,8 @@ async def edit_link(message: types.Message, state: FSMContext):
   link = message.text.strip()
 
   if 't.me' in link:
-    await connect_bd.mongo_conn.db.users.update_many({'necessary_channel.key': user_data['key_channel']}, {'$set': {'necessary_channel.link': link}})
-    await connect_bd.mongo_conn.db.channels_necessary_subscribe.update_one({'key': user_data['key_channel']}, {'$set': {'link': link}})
+    await mongo_conn.db.users.update_many({'necessary_channel.key': user_data['key_channel']}, {'$set': {'necessary_channel.link': link}})
+    await mongo_conn.db.channels_necessary_subscribe.update_one({'key': user_data['key_channel']}, {'$set': {'link': link}})
     t, m = await keyboard.variants_subscribe_necessary_to_channels(key_channel_id=user_data['key_channel'])
     await bot.edit_message_text(t, chat, user_data['message_id'], reply_markup=m, parse_mode='html', disable_web_page_preview=True)
     await channels_necessary_state.control_channels.set()
@@ -137,7 +141,7 @@ async def edit_bot_link(message: types.Message, state: FSMContext):
   link = message.text.strip()
 
   if 't.me' in link:
-    await connect_bd.mongo_conn.db.channels_necessary_subscribe.update_one({'key': user_data['key_channel']}, {'$set': {'bot_link': link}})
+    await mongo_conn.db.channels_necessary_subscribe.update_one({'key': user_data['key_channel']}, {'$set': {'bot_link': link}})
     t, m = await keyboard.variants_subscribe_necessary_to_channels(key_channel_id=user_data['key_channel'])
     await bot.edit_message_text(t, chat, user_data['message_id'], reply_markup=m, parse_mode='html', disable_web_page_preview=True)
     await channels_necessary_state.control_channels.set()

@@ -1,9 +1,11 @@
 import asyncio
-import random
 
-from loader import dp, types, state_profile, FSMContext, bot, keyboard, other_func, channel_subscribe, connect_bd, youmoney_web, conf, account_number, rate_limit, start_state
+from loader import dp, types, FSMContext, bot, mongo_conn, rate_limit
 from filters.filter_commands import isUser, isSubscribe, clearDownKeyboard
-
+from utils.state_progress import state_profile
+from utils.keyboards import keyboard
+from utils.functions import other_func
+from youmoney_hook.webhook import youmoney_web
 
 @dp.message_handler(isUser(), clearDownKeyboard(), isSubscribe(), commands=['profile'], state="*")
 @rate_limit(2, 'profile')
@@ -42,10 +44,10 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
     await bot.send_message(chat, f'Ваша пригласительная ссылка: <code>https://t.me/{bot["username"]}?start={user_id}</code>', parse_mode='html')
 
   if message.data == 'subscribe_channel':
-    user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id})
+    user = await mongo_conn.db.users.find_one({'user_id': user_id})
     if user.get('attempts_channel') == None:
       user['attempts_channel'] = []
-      await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'attempts_channel': []}})
+      await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'attempts_channel': []}})
 
     t, m = await keyboard.variants_subscribe_to_channels(user_get_channel=True, filters_channels=user['attempts_channel'])
     if t:
@@ -67,7 +69,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
 
   d = message.data.split(':')
   try:
-    settings = await connect_bd.mongo_conn.db.settings.find_one({'admin': True})
+    settings = await mongo_conn.db.settings.find_one({'admin': True})
     n = settings['account']
     attempt, price = d[1], d[2]
     if attempt and price:
@@ -85,10 +87,10 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
 async def callback_data(message: types.CallbackQuery, state: FSMContext):
   chat, message_id = str(message.message.chat.id), message.message.message_id
   user_id = str(message.from_user.id)
-  user = await connect_bd.mongo_conn.db.users.find_one({'user_id': user_id})
+  user = await mongo_conn.db.users.find_one({'user_id': user_id})
 
   count_sub1, count_sub2, all_channels = 0, 0, 0
-  async for channel in connect_bd.mongo_conn.db.channels_subscribe.find():
+  async for channel in mongo_conn.db.channels_subscribe.find():
     all_channels += 1
     if user.get('attempts_channel') != None:
       if channel['id'] in user['attempts_channel']:
@@ -99,7 +101,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
       ch = await bot.get_chat_member(channel['id'], user_id)
       if ch.status in ['creator', 'administrator', 'member']:
         count_sub2 += 1
-        await connect_bd.mongo_conn.db.users.update_one({'user_id': user_id},
+        await mongo_conn.db.users.update_one({'user_id': user_id},
           {'$push': {'attempts_channel': channel['id']}, '$inc': {'attempts_pay': 1}})
         await bot.send_message(chat, f'Вы получили вознаграждение за подписку на канал: <b>{channel["title"]}</b>', parse_mode='html')
     except:

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import aiohttp
 import asyncio
 import json
+from utils.keyboards import keyboard
+from loader import mongo_conn, conf, logging, exceptions
 
-from loader import connect_bd, conf, keyboard, logging, exceptions
-from gpt_api.keyboard import keyboard_gpt
 
 time_start = datetime.now()
 
@@ -19,13 +19,13 @@ class gptApi:
 
 
   async def check_accounts(self):
-    await connect_bd.mongo_conn.db.queues.update_many({'type': 'gpt'}, {'$set': {'status': 'wait'}})
-    # await connect_bd.mongo_conn.db.accounts.update_many({'type': 'gpt'}, {'$set': {'queue_count': 0}})
+    await mongo_conn.db.queues.update_many({'type': 'gpt'}, {'$set': {'status': 'wait'}})
+    # await mongo_conn.db.accounts.update_many({'type': 'gpt'}, {'$set': {'queue_count': 0}})
 
   async def get_account(self) -> dict:
-    acc = await connect_bd.mongo_conn.db.accounts.find_one({'type': 'gpt', 'queue_count': 0})
+    acc = await mongo_conn.db.accounts.find_one({'type': 'gpt', 'queue_count': 0})
     if acc:
-      await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 1}})
+      await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 1}})
       return acc
     else:
       return {}
@@ -87,8 +87,8 @@ class gptApi:
           if json_data.get('error'):
             if json_data['error'].get('message'):
               if 'maximum context length' in json_data['error']['message']:
-                await connect_bd.mongo_conn.db.users.update_one({'user_id': data['user_id']}, {'$set': {'dialogs': []}})
-                await connect_bd.mongo_conn.db.queues.delete_one({'user_id': data['user_id']})
+                await mongo_conn.db.users.update_one({'user_id': data['user_id']}, {'$set': {'dialogs': []}})
+                await mongo_conn.db.queues.delete_one({'user_id': data['user_id']})
                 return f'Был достигнут лимит, Слишком длинный запрос, возможно вы вели диалог. На данной модели максимальная длина 4097 символов', ''
 
           if res.status != 200:
@@ -96,7 +96,7 @@ class gptApi:
             logging.error(json_data.get('error'))
 
           if res.status == 200:
-            await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
+            await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
             if json_data.get('choices'):
               if isinstance(json_data['choices'], list):
                 if not data['dialogs']:
@@ -115,9 +115,9 @@ class gptApi:
 
           if res.status == 401:
             if acc['token'] == '':
-              await connect_bd.mongo_conn.db.accounts.delete_many({'token': '', 'type': 'gpt'})
+              await mongo_conn.db.accounts.delete_many({'token': '', 'type': 'gpt'})
 
-              count_queues = await connect_bd.mongo_conn.db.accounts.count_documents({'type': 'gpt'})
+              count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
               for id in conf['admin']['id']:
                 await bot.send_message(id,
                   f'Были удалены пустые токены. Осталось: <strong>{count_queues}</strong>',
@@ -125,16 +125,16 @@ class gptApi:
 
             if json_data.get('error'):
               if json_data['error']['code'] == 'invalid_api_key' or json_data['error']['code'] == 'account_deactivated':
-                await connect_bd.mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
+                await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
 
-                count_queues = await connect_bd.mongo_conn.db.accounts.count_documents({'type': 'gpt'})
+                count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
                 for id in conf['admin']['id']:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> невалидный. Осталось: <strong>{count_queues}</strong>',
                     parse_mode='html')
               if json_data['error']['code'] == 'account_deactivated':
-                await connect_bd.mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
+                await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
 
-                count_queues = await connect_bd.mongo_conn.db.accounts.count_documents({'type': 'gpt'})
+                count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
                 for id in conf['admin']['id']:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> заблокирован. Осталось: <strong>{count_queues}</strong>',
                     parse_mode='html')
@@ -144,15 +144,15 @@ class gptApi:
             if json_data.get('error'):
               if json_data['error']['code'] == 524:
                 await bot.send_message(data['chat_id'], f'К сожалению, Ваш запрос не был выполнен. Попробуйте спросить что-то другое.')
-                await connect_bd.mongo_conn.db.queues.delete_one({'user_id': data['user_id']})
+                await mongo_conn.db.queues.delete_one({'user_id': data['user_id']})
                 return False, ''
 
           if res.status == 429:     # TODO Некорректное поведение, нельзя тут токен удалять, мб надо ретраить запрос через время
             if json_data.get('error'):
               if json_data['error']['type'] != 'server_error':
-                await connect_bd.mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
+                await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
                 await session.close()
-                count_queues = await connect_bd.mongo_conn.db.accounts.count_documents({'type': 'gpt'})
+                count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
                 for id in conf['admin']['id']:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> израсходован. Осталось: <strong>{count_queues}</strong>', parse_mode='html')
                 return False, 'update'
@@ -181,11 +181,11 @@ class gptApi:
         if queue.get('repeat') == 0 or queue.get('repeat') == None:
           try:
             msg = await bot.send_message(queue['chat_id'], '⌛️ Подготовка ответа...')
-            await connect_bd.mongo_conn.db.queues.update_one({'user_id': queue['user_id']},
+            await mongo_conn.db.queues.update_one({'user_id': queue['user_id']},
               {'$set': {'message_id1': msg.message_id}})
           except (exceptions.BotBlocked, exceptions.BotKicked):
-            await connect_bd.mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
-            await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'},
+            await mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
+            await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'},
               {'$set': {'queue_count': 0}})
             return False
 
@@ -197,18 +197,18 @@ class gptApi:
           if d.get('content'):
             token_count += len(d['content'])
 
-        user = await connect_bd.mongo_conn.db.users.find_one({'user_id': queue['user_id']})
+        user = await mongo_conn.db.users.find_one({'user_id': queue['user_id']})
         set_dialog = user.get('set_dialog') and user['set_dialog'] or False
         if token_count < self.dialog_max_tokens:
-          await connect_bd.mongo_conn.db.users.update_one({'user_id': queue['user_id']}, {'$set': {'dialogs': queue['dialogs']}})
+          await mongo_conn.db.users.update_one({'user_id': queue['user_id']}, {'$set': {'dialogs': queue['dialogs']}})
         else:
-          await connect_bd.mongo_conn.db.users.update_one({'user_id': queue['user_id']}, {'$set': {'dialogs': [], 'set_dialog': False}})
+          await mongo_conn.db.users.update_one({'user_id': queue['user_id']}, {'$set': {'dialogs': [], 'set_dialog': False}})
           set_dialog = False
 
         m = await keyboard.set_dialog(set_dialog)
         edit = True
 
-        q = await connect_bd.mongo_conn.db.queues.find_one({'user_id': queue['user_id'], 'type': 'gpt'})
+        q = await mongo_conn.db.queues.find_one({'user_id': queue['user_id'], 'type': 'gpt'})
         while answer != '':
           t = answer[0:self.limit_message_tokens]
           answer = answer.replace(t, '')
@@ -227,25 +227,25 @@ class gptApi:
 
           await asyncio.sleep(1)
 
-        await connect_bd.mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
+        await mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
         return True
       else:
-        await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
+        await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
 
         if trigger == 'update':
           if queue.get('repeat') != None:
-            await connect_bd.mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'},
+            await mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'},
               {'$set': {'status': 'wait'}, '$inc': {'repeat': 1}})
           else:
-            await connect_bd.mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'},
+            await mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'},
               {'$set': {'status': 'wait', 'repeat': 1}})
 
 
     except (exceptions.BotKicked, exceptions.BotBlocked):
       logging.error("Exception occurred", exc_info=True)
-      await connect_bd.mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
+      await mongo_conn.db.queues.delete_one({'user_id': queue['user_id']})
       acc['queue_count'] = 0
-      await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
+      await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
     except Exception as e:
       logging.error("Exception occurred", exc_info=True)
 
@@ -255,22 +255,22 @@ class gptApi:
         now = datetime.now()
         date_resend = now - timedelta(minutes=8)
 
-        async for acc in connect_bd.mongo_conn.db.accounts.find({'type': 'gpt'}):
+        async for acc in mongo_conn.db.accounts.find({'type': 'gpt'}):
           if acc['date'] < date_resend and acc['queue_count'] == 1:
-            await connect_bd.mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
+            await mongo_conn.db.accounts.update_one({'token': acc['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
 
-        async for queue in connect_bd.mongo_conn.db.queues.find({'type': 'gpt'}):
+        async for queue in mongo_conn.db.queues.find({'type': 'gpt'}):
           try:
             if queue['date'] < date_resend and queue['status'] == 'process':
-              await connect_bd.mongo_conn.db.queues.delete_one({'type': 'gpt', 'user_id': queue['user_id']})
-              await connect_bd.mongo_conn.db.accounts.update_one({'token': queue['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
+              await mongo_conn.db.queues.delete_one({'type': 'gpt', 'user_id': queue['user_id']})
+              await mongo_conn.db.accounts.update_one({'token': queue['token'], 'type': 'gpt'}, {'$set': {'queue_count': 0}})
               await bot.send_message(queue['chat_id'], 'К сожалению, Ваш запрос не был выполнен. Попробуйте спросить что-то другое.')
               continue
 
             if queue['status'] == 'wait':
               acc = await self.get_account()
               if acc:
-                await connect_bd.mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'}, {'$set': {'token': acc['token'], 'status': 'process', 'date': datetime.now()}})
+                await mongo_conn.db.queues.update_one({'user_id': queue['user_id'], 'type': 'gpt'}, {'$set': {'token': acc['token'], 'status': 'process', 'date': datetime.now()}})
                 asyncio.create_task(self.get_answer_repeat(acc, bot, queue))
           except Exception as e:
             logging.error("Exception occurred", exc_info=True)
