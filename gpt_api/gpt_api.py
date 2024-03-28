@@ -5,7 +5,7 @@ import aiohttp
 import asyncio
 import json
 from utils.keyboards import keyboard
-from loader import mongo_conn, conf, logging, exceptions
+from loader import mongo_conn, admin_list, logging, exceptions
 
 
 time_start = datetime.now()
@@ -118,7 +118,7 @@ class gptApi:
               await mongo_conn.db.accounts.delete_many({'token': '', 'type': 'gpt'})
 
               count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
-              for id in conf['admin']['id']:
+              for id in admin_list:
                 await bot.send_message(id,
                   f'Были удалены пустые токены. Осталось: <strong>{count_queues}</strong>',
                   parse_mode='html')
@@ -128,14 +128,14 @@ class gptApi:
                 await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
 
                 count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
-                for id in conf['admin']['id']:
+                for id in admin_list:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> невалидный. Осталось: <strong>{count_queues}</strong>',
                     parse_mode='html')
               if json_data['error']['code'] == 'account_deactivated':
                 await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
 
                 count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
-                for id in conf['admin']['id']:
+                for id in admin_list:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> заблокирован. Осталось: <strong>{count_queues}</strong>',
                     parse_mode='html')
             return False, 'update'
@@ -153,7 +153,7 @@ class gptApi:
                 await mongo_conn.db.accounts.delete_one({'token': acc['token'], 'type': 'gpt'})
                 await session.close()
                 count_queues = await mongo_conn.db.accounts.count_documents({'type': 'gpt'})
-                for id in conf['admin']['id']:
+                for id in admin_list:
                   await bot.send_message(id, f'Токен <code>{acc["token"]}</code> израсходован. Осталось: <strong>{count_queues}</strong>', parse_mode='html')
                 return False, 'update'
               else:

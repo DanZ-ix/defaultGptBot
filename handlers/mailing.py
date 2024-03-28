@@ -2,7 +2,7 @@ import asyncio
 import time
 import re
 
-from loader import dp, types, FSMContext, bot, mongo_conn, exceptions, conf, logging
+from loader import dp, types, FSMContext, bot, mongo_conn, exceptions, admin_list, logging
 from filters.filter_commands import isPrivate
 from utils.state_progress import mailing_state
 from utils.keyboards import keyboard
@@ -74,7 +74,7 @@ class Mail():
 
   async def sender_init(self):
     self.msg_ids = []
-    for id in conf['admin']['id']:
+    for id in admin_list:
       try:
         msg = await bot.send_message(id, 'Рассылка началась, ожидайте...')
         await bot.pin_chat_message(id, msg.message_id)
@@ -95,7 +95,7 @@ class Mail():
       async for user in mongo_conn.db.users.find(obj):
         self.users.append(user)
     else:
-      for adm in conf['admin']['id']:
+      for adm in admin_list:
         self.users.append({'user_id': adm})
 
     self.count_users = len(self.users)

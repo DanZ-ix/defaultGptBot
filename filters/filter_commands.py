@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from aiogram.dispatcher.filters import BoundFilter
 
-from loader import types, conf, mongo_conn, bot, dp
+from loader import types, conf, mongo_conn, bot, dp, admin_list
 from utils.keyboards import keyboard
 from utils.state_progress import state_profile
 
@@ -26,16 +26,6 @@ class isUser(BoundFilter):
         mongo_conn.users[user_id]['username'] = username
         mongo_conn.users[user_id]['fullname'] = fullname
         await mongo_conn.db.users.update_one({'user_id': user_id}, {'$set': {'username': username, 'fullname': fullname}})
-
-    return True
-
-class EngineerWorks(BoundFilter):
-  async def check(self, message: types.Message):
-    chat, user_id = 'message' in message and message.message.chat.id or message.chat.id, str(message.from_user.id)
-
-    # if user_id not in conf['admin']['id']:
-    #   await bot.send_message(chat, 'Ведутся технические работы, ждите завершения.')
-    #   return False
 
     return True
 
@@ -161,7 +151,7 @@ class isAdmin(BoundFilter):
     user_id = str(message.from_user.id)
     t = 'text' in message and message.text or ''
 
-    if user_id in conf['admin']['id'] or conf['admin']['id'].strip() == '' and t != '':
+    if user_id in admin_list:
       if t[0] == '/':
         return True
     return False
@@ -169,6 +159,6 @@ class isAdmin(BoundFilter):
 class isPrivate(BoundFilter):
   async def check(self, message: types.Message):
     user_id = str(message.from_user.id)
-    if user_id in conf['admin']['id']:
+    if user_id in admin_list:
       return True
     return False

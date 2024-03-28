@@ -22,8 +22,6 @@ async def start(dp):
 
   gpt_api = gpt_api.gptApi(gpt_host_api, dialog_max_tokens)
 
-
-
   filters.setup(dp)
   await mongo_conn.connect_server()
   await gpt_api.check_accounts()

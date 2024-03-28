@@ -6,18 +6,16 @@ from aiogram.dispatcher import FSMContext, filters
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.mongo import MongoStorage
 
-
 from utils import throttling
 from data.config import bot_token, conf, configs
-
-
 from mongodb.connect_bd import mongo_connection
+
+
 
 isChat = filters.IDFilter
 
 logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
-
 
 async def get_config_data():
     bot_for_name = await bot.get_me()
@@ -25,12 +23,9 @@ async def get_config_data():
     await c.set_configs(bot_for_name.username)
     return c
 
-
-
 bot = Bot(token=bot_token)
 
 config = asyncio.run(get_config_data())
-
 
 welcome_message = config.welcome_message
 account_number = config.account_number

@@ -1,11 +1,8 @@
-# from handlers.auto_comments_answer import dp
-
 from handlers.auto_join_to_channel import dp
 
 from handlers.get_subscribe_attem_ch import dp
 
 from handlers.restart import dp
-# from handlers.set_admin import dp
 from handlers.control_accounts import dp
 from handlers.channels_subscribe import dp
 from handlers.channels_necessary import dp
