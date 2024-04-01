@@ -307,7 +307,6 @@ class aio_keyboard:
         {'text': 'Сделать рассылку', 'callback_data': f'start_mailing'}
       ])
       keyboard.add({'text': 'Админ рассылка', 'callback_data': f'start_admin_mail'})
-      keyboard.add({'text': 'Разослать через заданное время'})
     else:
       if not mailing:
         keyboard.add({'text': '📝 Режим редактора', 'callback_data': 'edit_mode'})
