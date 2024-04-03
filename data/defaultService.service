@@ -1,0 +1,14 @@
+[Unit]
+Description=Service description
+After=network.target
+
+[Service]
+Type=idle
+WorkingDirectory=/home/{bot_name}
+ExecStart=/home/{bot_name}/venv/bin/python main.py
+Restart=always
+LimitNOFILE=16000
+LimitNOFILESoft=16000
+
+[Install]
+WantedBy=multi-user.target
