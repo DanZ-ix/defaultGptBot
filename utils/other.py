@@ -39,6 +39,8 @@ class OtherCommands():
           self.types.BotCommand("profile", "👤 Профиль"),
           #self.types.BotCommand("check_courses", "Бесплатные курсы"),
           self.types.BotCommand("chat", "💬 Общение с chat-GPT нейросетью"),
+          self.types.BotCommand("update_join_message", "Обновить рекламное сообщение"),
+          self.types.BotCommand("check_join_message", "Проверить рекламное сообщение"),
           self.types.BotCommand("queues", "🕓 Список очереди"),
           self.types.BotCommand("purge_queues", "Очистить очереди"),
           self.types.BotCommand("mailing", "🔗 Рассылка"),
