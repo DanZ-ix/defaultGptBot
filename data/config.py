@@ -25,7 +25,7 @@ class configs:
         self.admin_ids = bot.get('admins')
         self.channels_auto_join = bot.get('auto_join_channel_id')
         self.account_number = '4100111127436736'
-        self.welcome_message = bot.get('welcome_message')
+        self.welcome_message = bot.get('start_message')
         self.auto_join_message = bot.get('auto_join_message')
         self.db_name = bot.get('db_name')
 

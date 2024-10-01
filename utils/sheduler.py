@@ -1,7 +1,7 @@
 import asyncio
 import aioschedule as shedule
 
-from loader import connect_bd, logging
+from loader import mongo_conn, logging
 import subprocess
 
 
@@ -12,7 +12,7 @@ class Func():
       await asyncio.sleep(0.1)
 
   async def set_attemts_for_all_users(self):
-    await connect_bd.mongo_conn.db.users.update_many({}, {'$set': {'attempts_free': 1, 'invite_count_now': 0}})
+    await mongo_conn.db.users.update_many({}, {'$set': {'attempts_free': 1, 'invite_count_now': 0}})
     subprocess.run('journalctl --vacuum-time=1d', shell=True)
     subprocess.run('rm /var/log/auth.log', shell=True)
     subprocess.run('rm /var/log/auth.log.1', shell=True)
