@@ -44,7 +44,6 @@ class OtherCommands():
           self.types.BotCommand("queues", "🕓 Список очереди"),
           self.types.BotCommand("purge_queues", "Очистить очереди"),
           self.types.BotCommand("mailing", "🔗 Рассылка"),
-          self.types.BotCommand("control_accounts", "⚙ Управление токенами аккаунтов"),
           self.types.BotCommand("channels_subscribe", "Управление каналами для подписки"),
           self.types.BotCommand("channels_necessary", "Управление каналами для обязательной подписки"),
           self.types.BotCommand("show_links", "Показать реферальные ссылки"),

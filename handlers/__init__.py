@@ -3,7 +3,6 @@ from handlers.auto_join_to_channel import dp
 from handlers.get_subscribe_attem_ch import dp
 
 from handlers.restart import dp
-from handlers.control_accounts import dp
 from handlers.channels_subscribe import dp
 from handlers.channels_necessary import dp
 from handlers.black_list import dp

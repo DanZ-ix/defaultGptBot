@@ -55,7 +55,7 @@ async def callback_data(message: types.CallbackQuery, state: FSMContext):
       await state.update_data(keyboard_open=True, msg_id_keyboard_open=msg.message_id, chat_id_keyboard_open=chat)
 
       m = await keyboard.set_dialog(False)
-      await bot.send_message(chat, f'Введите ваш запрос или начните диалог.', reply_markup=m)
+      await bot.send_message(chat, f'Введите ваш запрос')   #  или начните диалог.', reply_markup=m)
       await gpt_state.set_query.set()
 
       async with state.proxy() as d:

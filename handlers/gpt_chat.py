@@ -17,8 +17,8 @@ async def get_gpt_chat(message: types.Message, state: FSMContext):
   msg = await message.answer('Подключаюсь к нейросети...', reply_markup=m)
   await state.update_data(keyboard_open=True, msg_id_keyboard_open=msg.message_id, chat_id_keyboard_open=chat)
 
-  m = await keyboard.set_dialog(False)
-  await message.answer(f'Введите ваш запрос или начните диалог.', reply_markup=m)
+  m = await keyboard.set_dialog(False)    #Disabled dialog option
+  await message.answer(f'Введите ваш запрос')# , reply_markup=m)
 
   await gpt_state.set_query.set()
 
@@ -40,7 +40,7 @@ async def get_gpt_chat_text_call(message: types.Message, state: FSMContext):
   await state.update_data(keyboard_open=True, msg_id_keyboard_open=msg.message_id, chat_id_keyboard_open=chat)
 
   m = await keyboard.set_dialog(False)
-  await message.answer(f'Введите ваш запрос или начните диалог.', reply_markup=m)
+  await message.answer(f'Введите ваш запрос') # или начните диалог.', reply_markup=m)
 
 
   await gpt_state.set_query.set()

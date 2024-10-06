@@ -4,7 +4,7 @@ import asyncio
 async def start(dp):
   import asyncio
   import filters
-  from loader import types, bot, mongo_conn, logging, admin_list, gpt_host_api, dialog_max_tokens, account_number
+  from loader import types, bot, mongo_conn, logging, admin_list
   from gpt_api import gpt_api
   from utils.other import other_commands
   from youmoney_hook.webhook import youmoney_web
@@ -20,11 +20,10 @@ async def start(dp):
   other_commands.logging = logging
   other_commands.types = types
 
-  gpt_api = gpt_api.gptApi(gpt_host_api, dialog_max_tokens)
+  gpt_api = gpt_api.gptApi()
 
   filters.setup(dp)
   await mongo_conn.connect_server()
-  await gpt_api.check_accounts()
 
   asyncio.create_task(gpt_api.check_gpt_queues(bot))
 

@@ -8,3 +8,4 @@ aiofiles
 yoomoney
 pandas_ods_reader
 requests
+yandex-cloud-ml-sdk
