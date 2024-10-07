@@ -48,8 +48,3 @@ storage = MongoStorage(host='localhost', port=27017, db_name=mongo_conn.db_name,
 dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(throttling.ThrottlingMiddleware())
 rate_limit = throttling.rate_limit
-
-
-
-
-

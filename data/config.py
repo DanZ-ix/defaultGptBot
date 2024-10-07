@@ -42,8 +42,11 @@ class configs:
                 self.welcome_message = bot.get('start_message')
                 self.auto_join_message = bot.get('auto_join_message')
                 self.db_name = bot.get('db_name')
-                self.yandex_gpt_folder_id = bot.get('yandex_gpt_folder_id')
-                self.yandex_gpt_api_key = bot.get('yandex_gpt_api_key')
+                try:
+                    self.yandex_gpt_folder_id = bot.get('yandex_gpt_folder_id')
+                    self.yandex_gpt_api_key = bot.get('yandex_gpt_api_key')
+                except Exception as e:
+                    print("Нет данных для yandex_gpt_folder_id и yandex_gpt_api_key", e)
 
         except Exception as e:
             print("Не удалось загрузить настройки", e)
