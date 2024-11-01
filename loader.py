@@ -38,7 +38,7 @@ db_name = config.db_name
 admin_list = config.admin_ids
 
 sdk = AsyncYCloudML(folder_id=config.yandex_gpt_folder_id, auth=config.yandex_gpt_api_key)
-yandex_gpt = sdk.models.completions('yandexgpt')
+yandex_gpt = sdk.models.completions('yandexgpt-lite')                                   # Todo вынести модель в конфиги
 yandex_gpt = yandex_gpt.configure(temperature=0.8, max_tokens=config.dialog_max_tokens)
 
 mongo_conn = mongo_connection(db_name)
