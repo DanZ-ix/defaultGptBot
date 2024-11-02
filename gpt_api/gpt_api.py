@@ -9,7 +9,7 @@ class gptApi:
 
   async def send_query(self, bot, data):
     try:
-      result = await yandex_gpt.run(data['query'])
+      result = await yandex_gpt.run(data['query'])   # TODO Добавить возможность добавления системного промта
       return result[0].text, ''
 
     except Exception as e:
