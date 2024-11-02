@@ -6,19 +6,6 @@ from loader import types, mongo_conn
 # TODO Адский рефакторинг
 class aio_keyboard:
 
-  async def subscribe_channel(self, user_id, ch, ch1):
-    keyboard = types.InlineKeyboardMarkup(row_width=1)
-    if ch:
-      url, text = re.search(r'href=\"(.*)\">(.*)<', ch).groups()
-      keyboard.add({'text': text, 'url': url})
-    if ch1:
-      url1, text1 = re.search(r'href=\"(.*)\">(.*)<', ch1).groups()
-      keyboard.add({'text': text1, 'url': url1})
-
-    keyboard.add({'text': 'Готово ✅', 'callback_data': 'check_channels'})
-    return keyboard
-
-
   async def get_courses(self):
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*[
@@ -34,8 +21,7 @@ class aio_keyboard:
     keyboard = types.InlineKeyboardMarkup(row_width=2)
 
     keyboard.add(*[
-      {'text': 'ChatGPT', 'callback_data': 'gpt_chat'},
-      {'text': 'Midjorney', 'callback_data': f'imagine'}
+      {'text': 'ChatGPT', 'callback_data': 'gpt_chat'}
     ])
     keyboard.add({'text': '👤 Профиль', 'callback_data': 'get_profile'})
 
@@ -63,73 +49,6 @@ class aio_keyboard:
     ])
     return keyboard
 
-  async def get_accounts_imagine(self, acc_id=''):
-    keyboard = types.InlineKeyboardMarkup(row_width=2)
-    t, mode_select, arr, max_generate = 'Управление аккаунтами:', '', [], 0
-
-    async for acc in mongo_conn.db.accounts.find({'type': 'midjourney'}):
-      mode = acc.get('mode')
-      if acc_id == acc['id']:
-        now = acc['date']
-        max_generate = acc.get('max_generate') and acc['max_generate'] or 1
-        date = f'{now.hour}:{now.minute}:{now.second} {now.day}/{now.month}/{now.year}'
-        mode_select = acc.get('mode')
-        t = f'Дата добавления: {date}\nЮзеримя: {acc["username"]}\nПочта: {acc["email"]}\nРежим работы: {mode and mode or "не определён"}\nID канала с ботом: {acc.get("dc_bot_id") and acc["dc_bot_id"] or "нет"}'
-        arr.append({'text': f'✅ {acc["username"]}', 'callback_data': f'select:{acc["id"]}'})
-      else:
-        arr.append({'text': f'{mode == "fast" and "⚡ " or ""}{acc["username"]}', 'callback_data': f'select:{acc["id"]}'})
-
-    keyboard.add(*arr)
-
-    if acc_id:
-      keyboard.add({'text': f'Одновременная генерация: {max_generate}', 'callback_data': f'edit_max_generate:{acc_id}'})
-      keyboard.add(*[
-        {'text': mode_select == 'fast' and '✅ Fast mode' or 'Fast mode', 'callback_data': f'mode:fast:{acc_id}'},
-        {'text': mode_select == 'relax' and '✅ Relax mode' or 'Relax mode', 'callback_data': f'mode:relax:{acc_id}'}
-      ])
-      # keyboard.add({'text': 'Добавить ID канала с ботом', 'callback_data': f'add_bot_id:{acc_id}'})
-
-
-    keyboard.add(*[
-      {'text': 'Добавить', 'callback_data': 'new_acc:'},
-      {'text': acc_id and 'Удалить' or '', 'callback_data': f'del_acc:{acc_id}'}
-    ])
-
-    keyboard.add({'text': 'Настройки', 'callback_data': 'settings_acc'})
-
-    return t, keyboard
-
-  async def settings_for_dc(self, account_number):
-    keyboard = types.InlineKeyboardMarkup(row_width=2)
-    sett = await mongo_conn.db.settings.find_one({'admin': True})
-
-    if not sett:
-      sett = {'admin': True, 'mode': {'fast': {'min_queues': 30, 'max_queues': 100, 'time_wait': 5}, 'relax': {'min_queues': 1, 'max_queues': 30, 'time_wait': 15}}, 'account': account_number}
-      await mongo_conn.db.settings.insert_one(sett)
-
-
-    t = f'Макс. время ожидания ответа для <b>Fast</b>: {sett["mode"]["fast"]["time_wait"]} мин.\nМакс. время ожидания ответа для <b>Relax</b>: {sett["mode"]["relax"]["time_wait"]} мин.\n\n<strong>Что хотите изменить?</strong>'
-
-    keyboard.add({'text': 'Макс. время ответа fast режима', 'callback_data': 'time_wait:fast'})
-    keyboard.add({'text': 'Макс. время ответа relax режима', 'callback_data': 'time_wait:relax'})
-
-    keyboard.add({'text': 'Назад', 'callback_data': 'exit_settings'})
-    return t, keyboard
-
-
-  async def get_save_keyboard(self, buttons, select_callback_data=''):
-    keyboard = types.InlineKeyboardMarkup(row_width=5)
-    arr = []
-
-    for butt in buttons:
-      if select_callback_data != butt['callback_data']:
-        arr.append(butt)
-      else:
-        arr.append({'text': f"✔ {butt['text']}", 'callback_data': butt['callback_data']})
-
-    keyboard.add(*arr)
-
-    return keyboard, arr
 
   async def get_queues(self, update=False, type=''):
     keyboard = types.InlineKeyboardMarkup(row_width=2)
@@ -187,42 +106,9 @@ class aio_keyboard:
     ])
     return keyboard
 
-  async def start_chat(self, type='gpt', v='', ratio=''):
+  async def start_chat(self):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=4)
-
-    if type == 'gpt':
-      keyboard.add('Назад')
-
-    if type == 'midjourney' and v and ratio:
-      keyboard.add(*[f'Версия: {v}', f'Соотношение: {ratio}'])
-      keyboard.add('Нaзад')
-
-    var, var_full = [], []
-    if v and not ratio:
-      versions = ['v4', 'v5']
-
-      for ver in versions:
-        if ver == v:
-          var.append(f'✅ {ver}')
-        else:
-          var.append(ver)
-      keyboard.add(*var)
-
-    if ratio and not v:
-      versions = ['1:1', '2:3', '3:2', '4:7', '5:4', '7:4', '16:9']
-
-      for ver in versions:
-        if ver == ratio:
-          var.append(f'✅ {ver}')
-        else:
-          var.append(ver)
-
-        if len(var) > 3:
-          keyboard.add(*var)
-          var = []
-      if var:
-        keyboard.add(*var)
-
+    keyboard.add('Назад')
     return keyboard
 
   async def set_dialog(self, dialog):
@@ -230,8 +116,7 @@ class aio_keyboard:
     keyboard.add({'text': dialog and 'Завершить диалог' or 'Начать диалог', 'callback_data': 'set_dialog'})
     return keyboard
 
-
-  async def ban_list_settings(self):
+  async def ban_list_settings(self):      # Deprecated
     keyboard = types.InlineKeyboardMarkup(row_width=2)
 
     try:
@@ -248,7 +133,7 @@ class aio_keyboard:
 
     return t, keyboard
 
-  async def get_free_attempts(self):
+  async def get_free_attempts(self):      # Пустая клавиатура
     keyboard = types.InlineKeyboardMarkup(row_width=1)
 
     return keyboard

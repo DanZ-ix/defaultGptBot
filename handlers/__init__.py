@@ -8,6 +8,7 @@ from handlers.channels_subscribe import dp
 from handlers.channels_necessary import dp
 from handlers.black_list import dp
 from handlers.queues import dp
+from handlers.admin import dp
 
 
 from handlers.gpt_chat import dp
