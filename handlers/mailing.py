@@ -10,7 +10,7 @@ from utils.other import other_commands
 
 
 class Mail():
-  def __init__(self, text, video, photo, reply_markup, save_user, state, mail_new_channel=False, admin_mail=False):
+  def __init__(self, text: str, video, photo, reply_markup, save_user, state, mail_new_channel=False, admin_mail=False):
     self.state = state
     self.mail_new_channel = mail_new_channel
     self.admin_mail = admin_mail
@@ -115,6 +115,17 @@ class Mail():
   async def send_msg(self, id):
     try:
       try:
+        try:
+          if self.text.find("{{name}}"):
+            user = await mongo_conn.db.users.find_one({'user_id': id})
+            if user.get("fullname"):
+              self.text.replace("{{name}}", user.get("fullname"))
+            elif user.get("username"):
+              self.text.replace("{{name}}", user.get("username"))
+            else:
+              self.text.replace("{{name}}", "Уважаемый")
+        except Exception:
+          pass
         if self.video:
           await bot.send_video(id, video=self.video, caption=self.text, reply_markup=self.reply_markup,
             parse_mode='HTML')
