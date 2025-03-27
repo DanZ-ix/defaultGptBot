@@ -17,6 +17,7 @@ async def menu(message: types.Message, state: FSMContext):
   await state_profile.get_attempts.set()
 
 
+
 @dp.callback_query_handler(isUser(), isSubscribe(), state=state_profile.get_attempts)
 @rate_limit(3, 'profile')
 async def callback_data(message: types.CallbackQuery, state: FSMContext):
