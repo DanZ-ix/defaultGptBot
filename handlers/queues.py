@@ -21,12 +21,12 @@ async def get_imagine_phrase(message: types.Message, state: FSMContext):
 async def get_imagine_phrase(message: types.Message, state: FSMContext):
     try:
         bot_name = await bot.get_me()
-        file_name = bot_name
+        file_name = bot_name.username + "_users.txt"
         users = await mongo_conn.db.users.find({}).to_list(length=None)
         user_ids = [user.get("user_id") for user in users]
-        with open("user_ids.txt", "w", encoding='utf-8') as file:
+        with open(file_name, "w", encoding='utf-8') as file:
             file.write("\n".join(user_ids))
-        await message.answer_document(InputFile("user_ids.txt"))
+        await message.answer_document(InputFile(file_name))
     except Exception as e:
         print(e)
 
