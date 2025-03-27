@@ -46,6 +46,7 @@ class OtherCommands():
           self.types.BotCommand("mailing", "🔗 Рассылка"),
           self.types.BotCommand("channels_subscribe", "Управление каналами для подписки"),
           self.types.BotCommand("channels_necessary", "Управление каналами для обязательной подписки"),
+          self.types.BotCommand("get_users", "Выгрузить пользователей"),
           self.types.BotCommand("show_links", "Показать реферальные ссылки"),
           self.types.BotCommand("add_link", "Добавить ссылку"),
           self.types.BotCommand("black_list", "🔞 Запретные слова"),
