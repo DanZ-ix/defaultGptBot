@@ -18,6 +18,8 @@ isChat = filters.IDFilter
 logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 logging.getLogger('aiohttp').setLevel(logging.ERROR)
 
+user_states = {}
+
 async def get_config_data():
     bot_for_name = await bot.get_me()
     c = configs()
